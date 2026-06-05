@@ -1,0 +1,26 @@
+# Root level
+.env
+.DS_Store
+*.log
+
+# Backend
+backend/node_modules/
+backend/dist/
+backend/build/
+backend/.env
+
+# Mobile (Expo)
+mobile/node_modules/
+mobile/.expo/
+mobile/expo-env.d.ts
+mobile/ios/Pods/
+mobile/ios/build/
+mobile/android/app/build/
+mobile/android/.gradle/
+mobile/.env*
+
+# Common
+**/.env.local
+**/.env.development
+**/.env.production
+coverage/
