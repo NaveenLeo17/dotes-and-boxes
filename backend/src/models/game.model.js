@@ -1,40 +1,45 @@
 import mongoose from "mongoose";
 
-const gameSchema = new mongoose.Schema(
-  {
-    clerkId: {
-      type: String,
-      required: true,
-      index: true, // Very important for fast queries
-    },
-    bluePlayerName: {
-      type: mongoose.Types.ObjectId,
+const gameSchema = new mongoose.Schema({
+  players: {
+    blue: {
+      type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+      required: true,
     },
-    redPlayerName: {
-      type: String,
-      default: "Red",
-    },
-    winner: {
-      type: String,
-      enum: ["blue", "red", "draw", null],
+    red: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
       default: null,
     },
-    blueScore: {
+  },
+
+  gridSize: {
+    type: Number,
+    required: true,
+  },
+
+  scores: {
+    blue: {
       type: Number,
       default: 0,
     },
-    redScore: {
+    red: {
       type: Number,
       default: 0,
-    },
-    gridSize: {
-      type: Number,
-      required: true,
-      default: 5,
     },
   },
-  { timestamps: true },
-);
+
+  winner: {
+    type: String,
+    enum: ["blue", "red", "draw"],
+    required: true,
+  },
+
+  createdAt: {
+    type: String,
+    required: true,
+  },
+});
 
 export const Game = mongoose.model("Game", gameSchema);

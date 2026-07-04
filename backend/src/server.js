@@ -19,10 +19,18 @@ app.use(
 );
 
 // Mount the webhook routes with /api/webhooks prefix
-app.use("/api/webhooks", webhookRoutes);
+app.use(
+  "/api/webhooks",
+  express.raw({ type: "application/json" }),
+  webhookRoutes,
+);
 
 app.use(express.json());
-app.use(clerkMiddleware());
+app.use(
+  clerkMiddleware({
+    ignoredRoutes: ["/api/webhooks/(.*)"],
+  }),
+);
 
 app.use("/api/user", userRoutes);
 app.use("/api/game", gameRoutes);

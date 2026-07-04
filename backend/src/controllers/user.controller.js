@@ -1,9 +1,10 @@
 import uploadOnCloudinary from "../config/cloudinary.js";
 import { User } from "../models/user.model.js";
+import { clerkClient } from "@clerk/express";
 
 export const getCurrentUser = async (req, res) => {
   try {
-    const { userId: clerkId } = req.auth;
+    const { clerkId } = req.user;
 
     if (!clerkId) {
       res
@@ -29,39 +30,28 @@ export const updateUserProfile = async (req, res) => {
   const avatarLocalPath = req.file?.path;
 
   try {
-    if (name) {
-      const user = User.findByIdAndUpdate(
-        req.user._id,
-        {
-          $set: { name },
-        },
-        { returnDocument: "after" },
-      );
-
-      res.status(200).json({ message: `User is updated successfully ${user}` });
-    } else if (avatarLocalPath) {
+    if (avatarLocalPath) {
       const avatar = await uploadOnCloudinary(avatarLocalPath);
 
       if (!avatar) {
-        res.status(400).json({ message: "Error while uploading an avatar" });
+        res
+          .status(400)
+          .json({ message: "Error while uploading on Cloudinary" });
       }
 
-      const user = await User.findByIdAndUpdate(
-        req.user?._id,
-        {
-          $set: {
-            avatarUrl: avatar.url,
-          },
-        },
-        { returnDocument: "after" },
-      );
-
-      res
-        .status(200)
-        .json({ message: `Avatar image is uploaded successfully ${user}` });
+      await clerkClient.users.updateUserProfileImage(req.user.clerkId, {
+        file: avatar,
+      });
     }
   } catch (error) {
-    console.error("Error in updateUserProfile controller:", error);
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+
+  try {
+    if (name) {
+      await clerkClient.users.updateUser(req.user.clerkId, { username: name });
+    }
+  } catch (error) {
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 };
