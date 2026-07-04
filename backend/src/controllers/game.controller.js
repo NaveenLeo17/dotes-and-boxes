@@ -2,7 +2,7 @@ import { Game } from "../models/game.model.js";
 
 export const saveGame = async (req, res) => {
   try {
-    const { userId: clerkId } = req.auth;
+    const { clerkId } = req.user;
     const bluePlayerName = req.user?._id;
     const { redPlayerName, winner, blueScore, redScore, gridSize } = req.body;
 
@@ -34,7 +34,7 @@ export const saveGame = async (req, res) => {
       gridSize,
     });
 
-    return res.status(201).json({
+    res.status(201).json({
       success: true,
       message: "Game saved successfully",
       game: savedGame,

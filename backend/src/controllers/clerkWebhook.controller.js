@@ -11,22 +11,40 @@ const processClerkWebhook = async (evt) => {
 
   try {
     if (eventType === "user.created" || eventType === "user.updated") {
+      let name =
+        eventData.username ||
+        `${eventData.first_name || ""} ${eventData.last_name || ""}`.trim();
+
+      // Fallback if name is still empty
+      if (!name) {
+        name =
+          eventData.email_addresses?.[0]?.email_address?.split("@")[0] ||
+          `user_${eventData.id.slice(-6)}`;
+      }
+
       const userData = {
         clerkId: eventData.id,
         email: eventData.email_addresses?.[0]?.email_address || null,
-        name: eventData.first_name || null,
+        name: name,
+        avatarUrl: eventData.profile_image_url || eventData.image_url || null,
       };
 
-      await User.findOneAndUpdate({ clerkId: userData.clerkId }, userData, {
-        upsert: true,
-        new: true,
-      });
-
-      console.log(
-        `✅ User ${eventData.id} ${eventType === "user.created" ? "created" : "updated"} successfully`,
+      const user = await User.findOneAndUpdate(
+        { clerkId: eventData.id },
+        userData,
+        { upsert: true, returnDocument: "after" },
       );
+
+      console.log(user);
+
+      if (!user) {
+        console.error(`❌ Failed to create user for Clerk ID ${eventData.id}`);
+        return res.status(500).json({ message: "Failed to create user" });
+      }
+
+      console.log(`✅ User ${eventData.id} created successfully`);
     } else if (eventType === "user.deleted") {
-      await User.deleteOne({ clerkId: eventData.id });
+      await User.findOneAndDelete({ clerkId: eventData.id });
       console.log(`✅ User ${eventData.id} deleted successfully`);
     }
   } catch (dbError) {
