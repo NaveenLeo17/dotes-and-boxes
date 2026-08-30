@@ -14,7 +14,12 @@ const gameSchema = new mongoose.Schema({
     },
   },
 
-  gridSize: {
+  gridRows: {
+    type: Number,
+    required: true,
+  },
+
+  gridCols: {
     type: Number,
     required: true,
   },
@@ -37,8 +42,8 @@ const gameSchema = new mongoose.Schema({
   },
 
   createdAt: {
-    type: String,
-    required: true,
+    type: Date,
+    default: Date.now,
   },
 });
 
