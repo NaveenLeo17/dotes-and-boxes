@@ -1,17 +1,20 @@
 export class DotsAndBoxesEngine {
   //  Main entry point
   static applyMove(game, move) {
-    const { playerId, row, col, direction } = move;
-    const playerColor = this.getPlayerColor(game, playerId);
+    const { playerId, playerColor, row, col, direction } = move;
 
-    if (!playerColor) {
-      throw new Error("Player is not part of the game");
+    if (!["blue", "red"].includes(playerColor)) {
+      throw new Error("Invalid player");
     }
 
     if (game.status !== "playing") {
       throw new Error("Game is not active");
     }
 
+    /* * Make sure the requested player is * actually allowed to play this color. */
+    this.validatePlayer(game, playerId, playerColor);
+
+    /* * Make sure it is this player's turn. */
     if (game.turn.currentPlayer !== playerColor) {
       throw new Error("Not your turn");
     }
@@ -47,16 +50,16 @@ export class DotsAndBoxesEngine {
     return game;
   }
 
-  static endTurn(game, playerId) {
-    const playerColor = this.getPlayerColor(game, playerId);
-
-    if (!playerColor) {
-      throw new Error("Player is not part of the game");
+  static endTurn(game, playerId, playerColor) {
+    if (!["blue", "red"].includes(playerColor)) {
+      throw new Error("Invalid player");
     }
 
     if (game.status !== "playing") {
       throw new Error("Game is not active");
     }
+
+    this.validatePlayer(game, playerId, playerColor);
 
     if (game.turn.currentPlayer !== playerColor) {
       throw new Error("Not your turn");
@@ -67,20 +70,26 @@ export class DotsAndBoxesEngine {
     }
 
     this.switchTurn(game);
-
     return game;
   }
 
-  //   Returns blue/red
-  static getPlayerColor(game, playerId) {
-    if (game.players.blue.userId === playerId) {
-      return "blue";
-    }
-    if (game.players.red.userId === playerId) {
-      return "red";
+  // Validate Player
+  static validatePlayer(game, playerId, playerColor) {
+    if (playerColor === "blue") {
+      if (game.players.blue.userId !== playerId) {
+        throw new Error("You are not the blue player");
+      }
+      return;
     }
 
-    return null;
+    if (playerColor === "red") {
+      if (game.players.red.socketId !== game.players.blue.socketId) {
+        throw new Error("You are not the red player");
+      }
+      return;
+    }
+
+    throw new Error("Invalid player");
   }
 
   static switchTurn(game) {
@@ -97,7 +106,9 @@ export class DotsAndBoxesEngine {
 
   //   Basic move validation
   static validateMove(game, row, col, direction) {
-    const maxIndex = game.gridSize - 1;
+    const maxRow = game.gridRows - 1;
+
+    const maxCol = game.gridCols - 1;
 
     if (!["h", "v"].includes(direction)) {
       throw new Error("Invalid Direction");
@@ -111,14 +122,32 @@ export class DotsAndBoxesEngine {
       throw new Error("Coordinates cannot be negative");
     }
 
+    /*
+     * Horizontal line
+     *
+     * Starts at:
+     * row = 0 ... gridRows - 1
+     *
+     * col = 0 ... gridCols - 2
+     */
+
     if (direction === "h") {
-      if (row > maxIndex || col >= maxIndex) {
+      if (row > maxRow || col >= maxCol) {
         throw new Error("Invalid horizontal line");
       }
     }
 
+    /*
+     * Vertical line
+     *
+     * Starts at:
+     * row = 0 ... gridRows - 2
+     *
+     * col = 0 ... gridCols - 1
+     */
+
     if (direction === "v") {
-      if (row >= maxIndex || col > maxIndex) {
+      if (row >= maxRow || col > maxCol) {
         throw new Error("Invalid vertical line");
       }
     }
@@ -138,7 +167,7 @@ export class DotsAndBoxesEngine {
       }
 
       // box below
-      if (row < game.gridSize - 1 && this.isBoxComplete(game, row, col)) {
+      if (row < game.gridRows - 1 && this.isBoxComplete(game, row, col)) {
         completedBoxes.push({
           row,
           col,
@@ -156,7 +185,7 @@ export class DotsAndBoxesEngine {
       }
 
       // box right
-      if (col < game.gridSize - 1 && this.isBoxComplete(game, row, col)) {
+      if (col < game.gridCols - 1 && this.isBoxComplete(game, row, col)) {
         completedBoxes.push({
           row,
           col,
@@ -184,7 +213,7 @@ export class DotsAndBoxesEngine {
 
   //   Check whether game is over
   static checkWinner(game) {
-    const totalBoxes = (game.gridSize - 1) * (game.gridSize - 1);
+    const totalBoxes = (game.gridRows - 1) * (game.gridCols - 1);
     const claimedBoxes = game.scores.blue + game.scores.red;
 
     if (claimedBoxes !== totalBoxes) {

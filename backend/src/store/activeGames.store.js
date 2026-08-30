@@ -5,7 +5,7 @@ export const addGame = (gameId, gameState) => {
 };
 
 export const getGame = (gameId) => {
-  activeGames.get(gameId) || null;
+  return activeGames.get(gameId) || null;
 };
 
 export const updateGame = (gameId, updatedGame) => {
